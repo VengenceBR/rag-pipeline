@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: corvit-assistant
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: PORT
+        value: "7860"
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: PINECONE_API_KEY
+        sync: false
+      - key: PINECONE_INDEX_NAME
+        value: rag-pipeline
+      - key: PUBLIC_CHAT_COMPANY_ID
+        value: corvit
+      - key: REQUIRE_API_KEY
+        value: "true"
