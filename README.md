@@ -1,3 +1,13 @@
+---
+title: Corvit Assistant
+emoji: 💬
+colorFrom: green
+colorTo: gray
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # rag-pipeline
 
 End-to-end hybrid RAG pipeline for a company's documents: dense (Pinecone) + BM25 lexical
@@ -90,6 +100,36 @@ curl -X POST http://localhost:8000/query \
   -H "X-API-Key: sk-..." -H "Content-Type: application/json" \
   -d '{"query": "how many days do I have to return an item?", "company_id": "acme"}'
 ```
+
+## Two frontends, two trust models
+
+- **`GET /`** — the public chat site (`src/rag/api/static/index.html`). No API key, ever. It only
+  ever talks to `POST /chat`, which is hardcoded to one company (`PUBLIC_CHAT_COMPANY_ID`, default
+  `corvit`) and rate-limited per client IP instead of per key. This is the pattern for anything
+  actual visitors will load in a browser — the request never carries a credential that could leak.
+- **`GET /demo`** (`src/rag/api/static/demo.html`) — a debug tool for *you*: it takes a real
+  `X-API-Key` and lets you hit any company/mode by hand. Fine for local testing, **never** meant
+  to be the thing you point real users at, since the key sits in the page.
+
+## Deploying (free): Hugging Face Spaces
+
+The root `Dockerfile` (not `docker/Dockerfile`, which is for local `docker compose`) targets
+[Spaces' Docker SDK](https://huggingface.co/docs/hub/spaces-sdks-docker): runs as the required
+uid 1000, listens on port 7860, and `entrypoint.sh` re-ingests `data/<PUBLIC_CHAT_COMPANY_ID>`
+in sync mode on every boot before starting the server — Spaces' disk doesn't persist across
+restarts on the free tier, so the index needs to be rebuildable from what's committed in `data/`.
+
+1. Create a Space at huggingface.co/new-space with SDK = Docker (the `README.md` YAML frontmatter
+   here already sets `sdk: docker` / `app_port: 7860`, so a fresh Space using this repo's content
+   picks them up automatically).
+2. In the Space's Settings → Repository secrets, add `GEMINI_API_KEY` and `PINECONE_API_KEY`
+   (`PINECONE_INDEX_NAME` too, if not using the default). Secrets, not public Variables — they're
+   injected as env vars at runtime and never appear in the Space's files.
+3. Push this repo to the Space's git remote. It builds and serves `/` at the Space's URL.
+
+Free CPU Spaces need no credit card. Cold boot re-embeds `data/corvit`'s few chunks (trivial,
+free-tier embedding quota is generous) and re-populates BM25; Pinecone itself is external and
+already persists regardless.
 
 ## Tests
 

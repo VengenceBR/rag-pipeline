@@ -39,6 +39,11 @@ class Settings(BaseSettings):
     still stopping a runaway/leaked key from burning the whole quota. Override per
     key via `rag keys create --rate-limit`."""
 
+    # Public chat widget (no API key -- IP-rate-limited instead, locked to one company)
+    public_chat_company_id: str = "corvit"
+    public_chat_rate_limit_per_minute: int = 15
+    public_chat_max_message_length: int = 500
+
     @property
     def use_pinecone(self) -> bool:
         return bool(self.pinecone_api_key)

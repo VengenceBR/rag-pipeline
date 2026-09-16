@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Corvit Assistant</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f6f7f5;
+    --panel: #ffffff;
+    --border: #e4e3df;
+    --text: #201f1c;
+    --muted: #6c6b66;
+    --accent: #2f6f4f;
+    --accent-dark: #24573e;
+    --accent-fg: #ffffff;
+    --user-bubble: #e9f0ea;
+    --assistant-bubble: #ffffff;
+    --error-bg: #fdecea;
+    --error-border: #f3c8c4;
+    --error-fg: #9a3b34;
+    --chip-bg: #f0efe9;
+    --chip-border: #e0dfd8;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    padding-block: max(20px, env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-bottom, 0px));
+    padding-inline: 16px;
+  }
+  .app {
+    width: 100%;
+    max-width: 680px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: calc(100vh - 40px);
+  }
+  header { text-align: center; padding: 8px 0 2px; }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: var(--accent);
+    color: var(--accent-fg);
+    font-weight: 700;
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .tagline { color: var(--muted); font-size: 13.5px; margin: 0; }
+  .disclaimer {
+    margin-top: 10px;
+    font-size: 11.5px;
+    color: var(--muted);
+    background: var(--chip-bg);
+    border: 1px solid var(--chip-border);
+    border-radius: 999px;
+    display: inline-block;
+    padding: 5px 12px;
+  }
+  .chat {
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow-y: auto;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 300px;
+  }
+  .msg { max-width: 88%; display: flex; flex-direction: column; }
+  .msg.user { align-self: flex-end; align-items: flex-end; }
+  .msg.assistant { align-self: flex-start; align-items: flex-start; }
+  .bubble {
+    padding: 11px 15px;
+    border-radius: 14px;
+    font-size: 14.5px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+  }
+  .msg.user .bubble { background: var(--accent); color: var(--accent-fg); border-bottom-right-radius: 4px; }
+  .msg.assistant .bubble { background: var(--assistant-bubble); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+  .msg.error .bubble { background: var(--error-bg); border: 1px solid var(--error-border); color: var(--error-fg); }
+  .citations {
+    margin-top: 6px;
+    font-size: 11.5px;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .citation-pill {
+    background: var(--chip-bg);
+    border: 1px solid var(--chip-border);
+    border-radius: 999px;
+    padding: 3px 9px;
+  }
+  .typing { display: flex; gap: 4px; padding: 4px 2px; }
+  .typing span {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--muted);
+    animation: bounce 1.2s infinite ease-in-out;
+  }
+  .typing span:nth-child(2) { animation-delay: 0.15s; }
+  .typing span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); opacity: .5; } 30% { transform: translateY(-4px); opacity: 1; } }
+  .empty { margin: auto; text-align: center; color: var(--muted); font-size: 13px; max-width: 320px; }
+  .chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 14px;
+  }
+  .chip {
+    background: var(--chip-bg);
+    border: 1px solid var(--chip-border);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 12.5px;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .chip:hover { border-color: var(--accent); }
+  form {
+    display: flex;
+    gap: 8px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 6px;
+  }
+  form input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 10px 12px;
+    font-size: 14.5px;
+    color: var(--text);
+    outline: none;
+  }
+  button {
+    padding: 0 20px;
+    border-radius: 10px;
+    border: none;
+    background: var(--accent);
+    color: var(--accent-fg);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:hover { background: var(--accent-dark); }
+  button:disabled { opacity: 0.5; cursor: default; }
+  footer {
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    padding-bottom: 4px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16171a;
+      --panel: #1e1f22;
+      --border: #303136;
+      --text: #ececec;
+      --muted: #9b9b9b;
+      --accent: #4caf7d;
+      --accent-dark: #3c9066;
+      --accent-fg: #0c130f;
+      --user-bubble: #24382c;
+      --assistant-bubble: #1e1f22;
+      --error-bg: #2e1d1c;
+      --error-border: #5a332f;
+      --error-fg: #ff8a80;
+      --chip-bg: #26272b;
+      --chip-border: #34353a;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="badge">CV</div>
+    <h1>Corvit Assistant</h1>
+    <p class="tagline">Ask about Corvit Networks' policies, values, and client support.</p>
+    <span class="disclaimer">Independent demo &middot; not an official Corvit channel &middot; built from public info</span>
+  </header>
+
+  <div class="chat" id="chat">
+    <div class="empty" id="emptyState">
+      Try asking about response times, complaint handling, or company values.
+      <div class="chips" id="chips">
+        <div class="chip" data-q="What are Corvit's core values?">Core values?</div>
+        <div class="chip" data-q="How fast do you respond to support tickets?">Response times?</div>
+        <div class="chip" data-q="How do you handle client complaints?">Complaint handling?</div>
+      </div>
+    </div>
+  </div>
+
+  <form id="form">
+    <input id="input" type="text" placeholder="Ask a question..." autocomplete="off" maxlength="500">
+    <button id="send" type="submit">Send</button>
+  </form>
+
+  <footer>Hybrid RAG (Pinecone + BM25 + reranking) &middot; answers grounded in cited source docs</footer>
+</div>
+
+<script>
+(() => {
+  const chat = document.getElementById('chat');
+  const emptyState = document.getElementById('emptyState');
+  const form = document.getElementById('form');
+  const input = document.getElementById('input');
+  const sendBtn = document.getElementById('send');
+
+  function scrollDown() { chat.scrollTop = chat.scrollHeight; }
+
+  function addMessage(role, text) {
+    if (emptyState.isConnected) emptyState.remove();
+    const wrap = document.createElement('div');
+    wrap.className = 'msg ' + role;
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = text;
+    wrap.appendChild(bubble);
+    chat.appendChild(wrap);
+    scrollDown();
+    return wrap;
+  }
+
+  function addCitations(wrap, citations) {
+    if (!citations || !citations.length) return;
+    const box = document.createElement('div');
+    box.className = 'citations';
+    citations.forEach(c => {
+      const pill = document.createElement('span');
+      pill.className = 'citation-pill';
+      pill.textContent = c.page ? `${c.marker} ${c.title}, p.${c.page}` : `${c.marker} ${c.title}`;
+      box.appendChild(pill);
+    });
+    wrap.appendChild(box);
+    scrollDown();
+  }
+
+  function addTyping() {
+    const wrap = document.createElement('div');
+    wrap.className = 'msg assistant';
+    wrap.id = 'typing-indicator';
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble typing';
+    bubble.innerHTML = '<span></span><span></span><span></span>';
+    wrap.appendChild(bubble);
+    chat.appendChild(wrap);
+    scrollDown();
+  }
+
+  function removeTyping() {
+    document.getElementById('typing-indicator')?.remove();
+  }
+
+  async function send(message) {
+    addMessage('user', message);
+    sendBtn.disabled = true;
+    addTyping();
+
+    try {
+      const res = await fetch('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message }),
+      });
+      const data = await res.json();
+      removeTyping();
+
+      if (!res.ok) {
+        addMessage('error', data.detail || 'Something went wrong. Please try again.');
+        return;
+      }
+      const wrap = addMessage('assistant', data.answer);
+      addCitations(wrap, data.citations);
+    } catch (err) {
+      removeTyping();
+      addMessage('error', 'Could not reach the assistant. Please try again in a moment.');
+    } finally {
+      sendBtn.disabled = false;
+      input.focus();
+    }
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const message = input.value.trim();
+    if (!message) return;
+    input.value = '';
+    send(message);
+  });
+
+  document.getElementById('chips').addEventListener('click', (e) => {
+    const q = e.target.getAttribute('data-q');
+    if (q) send(q);
+  });
+})();
+</script>
+</body>
+</html>

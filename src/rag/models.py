@@ -67,6 +67,20 @@ class QueryResponse(BaseModel):
     retrieved_chunks: list[RetrievedChunk] = Field(default_factory=list)
 
 
+class PublicCitation(BaseModel):
+    """Trimmed citation for the unauthenticated public chat endpoint -- no
+    chunk_id or source_path, which are internal implementation details."""
+
+    marker: str
+    title: str
+    page: int | None = None
+
+
+class PublicChatResponse(BaseModel):
+    answer: str
+    citations: list[PublicCitation] = Field(default_factory=list)
+
+
 class IngestResult(BaseModel):
     company_id: str
     documents_loaded: int

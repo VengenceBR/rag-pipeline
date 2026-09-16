@@ -18,7 +18,19 @@ class _FakeService:
         )
 
     def query(self, query, company_id, mode="answer"):
-        return QueryResponse(mode=mode, query=query, company_id=company_id, answer="ok")
+        from rag.models import Citation
+
+        return QueryResponse(
+            mode=mode,
+            query=query,
+            company_id=company_id,
+            answer="ok",
+            citations=[
+                Citation(
+                    marker="[1]", source_path="data/x.md", title="x", page=None, chunk_id="c1"
+                )
+            ],
+        )
 
 
 @pytest.fixture

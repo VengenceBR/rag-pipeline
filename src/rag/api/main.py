@@ -4,13 +4,14 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel
 
 from rag.auth import ApiKeyRecord, load_api_keys
 from rag.config import settings
-from rag.models import IngestResult, QueryResponse
+from rag.models import IngestResult, PublicChatResponse, PublicCitation, QueryResponse
 from rag.rate_limit import rate_limiter
 from rag.service import RAGService
 
@@ -66,6 +67,72 @@ def authorize_company(record: ApiKeyRecord | None, company_id: str) -> None:
 class QueryRequest(BaseModel):
     query: str
     company_id: str
+
+
+class PublicChatRequest(BaseModel):
+    message: str
+
+
+def _client_ip(request: Request) -> str:
+    # A real deployment behind a reverse proxy (HF Spaces included) puts the
+    # original client IP in X-Forwarded-For; fall back to the direct peer.
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+@app.get("/", include_in_schema=False)
+def index():
+    """The public-facing chat site. No API key needed -- it only ever talks to
+    settings.public_chat_company_id, through the IP-rate-limited /chat endpoint.
+    """
+    return FileResponse(Path(__file__).parent / "static" / "index.html")
+
+
+@app.post("/chat", response_model=PublicChatResponse)
+def public_chat(request: PublicChatRequest, http_request: Request):
+    message = request.message.strip()
+    if not message:
+        raise HTTPException(status_code=400, detail="Message cannot be empty.")
+    if len(message) > settings.public_chat_max_message_length:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Message too long (max {settings.public_chat_max_message_length} characters).",
+        )
+
+    ip = _client_ip(http_request)
+    allowed, retry_after = rate_limiter.check(
+        f"public:{ip}", settings.public_chat_rate_limit_per_minute
+    )
+    if not allowed:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many messages -- please wait a moment before trying again.",
+            headers={"Retry-After": str(int(retry_after) + 1)},
+        )
+
+    try:
+        result = get_service().query(message, settings.public_chat_company_id, mode="answer")
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+    return PublicChatResponse(
+        answer=result.answer or "",
+        citations=[
+            PublicCitation(marker=c.marker, title=c.title, page=c.page) for c in result.citations
+        ],
+    )
+
+
+@app.get("/demo", include_in_schema=False)
+def demo():
+    """A minimal chat page to try the full authenticated API by hand (any company,
+    any mode) -- NOT a pattern for real customer-facing use, since it holds the raw
+    API key in the browser. A real integration puts the key in the company's own
+    backend and proxies from there. The public / + /chat above is the safe pattern.
+    """
+    return FileResponse(Path(__file__).parent / "static" / "demo.html")
 
 
 @app.get("/health")
