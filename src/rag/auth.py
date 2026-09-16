@@ -13,6 +13,8 @@ class ApiKeyRecord(BaseModel):
     name: str
     companies: list[str]
     """List of company_ids this key may act on. '*' authorizes every company."""
+    rate_limit_per_minute: int | None = None
+    """Per-key override. None falls back to settings.rate_limit_per_minute."""
 
     def authorizes(self, company_id: str) -> bool:
         return "*" in self.companies or company_id in self.companies
@@ -34,10 +36,14 @@ def save_api_keys(keys: dict[str, ApiKeyRecord]) -> None:
     )
 
 
-def create_api_key(name: str, companies: list[str]) -> str:
+def create_api_key(
+    name: str, companies: list[str], rate_limit_per_minute: int | None = None
+) -> str:
     keys = load_api_keys()
     new_key = f"sk-{secrets.token_urlsafe(32)}"
-    keys[new_key] = ApiKeyRecord(name=name, companies=companies)
+    keys[new_key] = ApiKeyRecord(
+        name=name, companies=companies, rate_limit_per_minute=rate_limit_per_minute
+    )
     save_api_keys(keys)
     return new_key
 

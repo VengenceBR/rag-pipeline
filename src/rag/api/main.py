@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from rag.auth import ApiKeyRecord, load_api_keys
 from rag.config import settings
 from rag.models import IngestResult, QueryResponse
+from rag.rate_limit import rate_limiter
 from rag.service import RAGService
 
 app = FastAPI(
@@ -30,8 +31,9 @@ def get_service() -> RAGService:
 
 
 def get_api_key_record(api_key: str | None = Depends(_api_key_header)) -> ApiKeyRecord | None:
-    """Resolves X-API-Key to its record. Returns None only when auth is disabled
-    (REQUIRE_API_KEY=false), which each route treats as "unrestricted".
+    """Resolves X-API-Key to its record, enforcing that key's rate limit along the
+    way. Returns None only when auth is disabled (REQUIRE_API_KEY=false), which
+    each route treats as "unrestricted" — including no rate limiting.
     """
     if not settings.require_api_key:
         return None
@@ -40,6 +42,15 @@ def get_api_key_record(api_key: str | None = Depends(_api_key_header)) -> ApiKey
     record = load_api_keys().get(api_key)
     if record is None:
         raise HTTPException(status_code=401, detail="Invalid API key.")
+
+    limit = record.rate_limit_per_minute or settings.rate_limit_per_minute
+    allowed, retry_after = rate_limiter.check(api_key, limit)
+    if not allowed:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Rate limit exceeded ({limit} requests/minute for this key).",
+            headers={"Retry-After": str(int(retry_after) + 1)},
+        )
     return record
 
 

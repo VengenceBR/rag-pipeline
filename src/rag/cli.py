@@ -129,19 +129,26 @@ def keys_create(
         "-c",
         help="Company/tenant id this key may access. Repeat for multiple, or pass '*' for all.",
     ),
+    rate_limit: int | None = typer.Option(
+        None,
+        "--rate-limit",
+        "-r",
+        help="Requests/minute for this key. Defaults to RATE_LIMIT_PER_MINUTE if unset.",
+    ),
 ):
     """Generate a new API key for the FastAPI server, scoped to one or more companies."""
     from rag.auth import create_api_key
 
-    new_key = create_api_key(name=name, companies=company)
-    typer.echo(f"Created key for '{name}' (companies={company}):\n\n  {new_key}\n")
+    new_key = create_api_key(name=name, companies=company, rate_limit_per_minute=rate_limit)
+    typer.echo(f"Created key for '{name}' (companies={company}, rate_limit={rate_limit}):\n\n  {new_key}\n")
     typer.echo("Store this now - it is not re-displayed. Send it as the X-API-Key header.")
 
 
 @keys_app.command("list")
 def keys_list():
-    """List existing API keys (names and authorized companies, not the key values)."""
+    """List existing API keys (names, authorized companies, and rate limits — not the key values)."""
     from rag.auth import load_api_keys
+    from rag.config import settings
 
     records = load_api_keys()
     if not records:
@@ -149,7 +156,10 @@ def keys_list():
         return
     for key, record in records.items():
         masked = f"{key[:7]}...{key[-4:]}"
-        typer.echo(f"{masked}  name={record.name}  companies={record.companies}")
+        limit = record.rate_limit_per_minute or f"{settings.rate_limit_per_minute} (default)"
+        typer.echo(
+            f"{masked}  name={record.name}  companies={record.companies}  rate_limit={limit}/min"
+        )
 
 
 @keys_app.command("revoke")

@@ -46,11 +46,18 @@ so one client can never query or ingest into another company's index. Manage key
 
 ```bash
 python -m rag.cli keys create --name "acme support bot" --company acme
+python -m rag.cli keys create --name "acme support bot" --company acme --rate-limit 60
 python -m rag.cli keys list
 python -m rag.cli keys revoke sk-...
 ```
 
-Set `REQUIRE_API_KEY=false` in `.env` to disable auth entirely (local dev only).
+Set `REQUIRE_API_KEY=false` in `.env` to disable auth (and rate limiting) entirely (local dev only).
+
+Each key is also rate-limited (`RATE_LIMIT_PER_MINUTE` in `.env`, default 20/min; override per key with
+`--rate-limit`) — a sliding window keyed by the API key, so one leaked or misbehaving key can't burn
+through the whole Gemini free-tier quota. Over the limit returns `429` with a `Retry-After` header.
+This is in-process, so it resets on restart and doesn't share state across multiple replicas — fine
+for the single-container deployment this ships with; swap in a Redis-backed limiter if you scale out.
 
 - `GET /health` — no key required
 - `POST /ingest?company_id=acme` (multipart file upload)

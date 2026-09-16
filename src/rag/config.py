@@ -33,6 +33,11 @@ class Settings(BaseSettings):
     # Auth (API server only — the CLI is local/trusted and skips this)
     api_keys_file: Path = Path("./api_keys.json")
     require_api_key: bool = True
+    rate_limit_per_minute: int = 20
+    """Default per-key request budget. Gemini's free tier caps generation around
+    10-15 RPM, so this leaves headroom for embedding calls in the same window while
+    still stopping a runaway/leaked key from burning the whole quota. Override per
+    key via `rag keys create --rate-limit`."""
 
     @property
     def use_pinecone(self) -> bool:
