@@ -1,4 +1,5 @@
 .env
+api_keys.json
 .venv/
 venv/
 .git/

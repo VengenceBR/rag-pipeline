@@ -9,6 +9,8 @@ import typer
 from rag.config import settings
 
 app = typer.Typer(add_completion=False, help="Hybrid RAG pipeline CLI")
+keys_app = typer.Typer(add_completion=False, help="Manage API keys for the FastAPI server")
+app.add_typer(keys_app, name="keys")
 
 
 @contextmanager
@@ -116,6 +118,50 @@ def check_models():
     ):
         status = "OK" if model_id in available else "NOT FOUND for this key"
         typer.echo(f"{label}: {model_id} -> {status}")
+
+
+@keys_app.command("create")
+def keys_create(
+    name: str = typer.Option(..., "--name", "-n", help="Human-readable label for this key"),
+    company: list[str] = typer.Option(
+        ...,
+        "--company",
+        "-c",
+        help="Company/tenant id this key may access. Repeat for multiple, or pass '*' for all.",
+    ),
+):
+    """Generate a new API key for the FastAPI server, scoped to one or more companies."""
+    from rag.auth import create_api_key
+
+    new_key = create_api_key(name=name, companies=company)
+    typer.echo(f"Created key for '{name}' (companies={company}):\n\n  {new_key}\n")
+    typer.echo("Store this now - it is not re-displayed. Send it as the X-API-Key header.")
+
+
+@keys_app.command("list")
+def keys_list():
+    """List existing API keys (names and authorized companies, not the key values)."""
+    from rag.auth import load_api_keys
+
+    records = load_api_keys()
+    if not records:
+        typer.echo("No API keys yet. Create one with: rag keys create --name ... --company ...")
+        return
+    for key, record in records.items():
+        masked = f"{key[:7]}...{key[-4:]}"
+        typer.echo(f"{masked}  name={record.name}  companies={record.companies}")
+
+
+@keys_app.command("revoke")
+def keys_revoke(api_key: str = typer.Argument(..., help="Full API key to revoke")):
+    """Revoke an API key."""
+    from rag.auth import revoke_api_key
+
+    if revoke_api_key(api_key):
+        typer.echo("Key revoked.")
+    else:
+        typer.echo("Key not found.", err=True)
+        raise typer.Exit(code=1)
 
 
 if __name__ == "__main__":

@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     data_dir: Path = Path("./data")
     index_dir: Path = Path("./.indexes")
 
+    # Auth (API server only — the CLI is local/trusted and skips this)
+    api_keys_file: Path = Path("./api_keys.json")
+    require_api_key: bool = True
+
     @property
     def use_pinecone(self) -> bool:
         return bool(self.pinecone_api_key)

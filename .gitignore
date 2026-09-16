@@ -6,6 +6,7 @@ venv/
 build/
 dist/
 .env
+api_keys.json
 .indexes/
 .pytest_cache/
 .ruff_cache/

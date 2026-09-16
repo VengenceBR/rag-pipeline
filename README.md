@@ -41,10 +41,27 @@ python -m rag.cli check-models
 uvicorn rag.api.main:app --reload
 ```
 
-- `GET /health`
+Every route except `/health` requires an `X-API-Key` header, scoped to specific `company_id`s
+so one client can never query or ingest into another company's index. Manage keys with the CLI:
+
+```bash
+python -m rag.cli keys create --name "acme support bot" --company acme
+python -m rag.cli keys list
+python -m rag.cli keys revoke sk-...
+```
+
+Set `REQUIRE_API_KEY=false` in `.env` to disable auth entirely (local dev only).
+
+- `GET /health` — no key required
 - `POST /ingest?company_id=acme` (multipart file upload)
 - `POST /query` `{"query": "...", "company_id": "acme"}` → grounded answer + citations
 - `POST /prompt` `{"query": "...", "company_id": "acme"}` → assembled prompt package, no generation
+
+```bash
+curl -X POST http://localhost:8000/query \
+  -H "X-API-Key: sk-..." -H "Content-Type: application/json" \
+  -d '{"query": "how many days do I have to return an item?", "company_id": "acme"}'
+```
 
 ## Tests
 
@@ -53,7 +70,8 @@ pytest
 ```
 
 The full suite runs with no API keys set — it exercises chunking, RRF fusion, the local
-vector store, and BM25 directly, plus an end-to-end retrieval pass with a fake embedder.
+vector store, BM25, and API auth (401/403/200 paths) directly, plus an end-to-end retrieval
+pass with a fake embedder.
 
 ## Docker
 
@@ -83,3 +101,7 @@ confirms your API key can actually reach the configured model IDs before you rel
 - **Two response modes off one retrieval path**: `answer` and `prompt` share the exact same
   retrieval + prompt-assembly code, so they can never disagree about what was retrieved —
   only about whether Gemini is then called to generate from it.
+- **Auth is authorization, not just authentication**: an API key doesn't just prove you're a
+  known caller, it carries the specific `company_id`s you're allowed to touch. Without this,
+  `company_id` would be a client-supplied field with no enforcement — any caller could read or
+  pollute another tenant's document index just by naming it in the request.
