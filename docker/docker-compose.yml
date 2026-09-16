@@ -1,0 +1,15 @@
+services:
+  rag-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../.env
+    volumes:
+      - rag-indexes:/app/.indexes
+      - ../data:/app/data
+
+volumes:
+  rag-indexes:
