@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     embedding_model: str = "gemini-embedding-001"
     embedding_dim: int = 768
-    generation_model: str = "gemini-3.5-flash"
+    generation_model: str = "gemini-3.6-flash"
 
     # Pinecone (optional — falls back to the local store when unset)
     pinecone_api_key: str = ""
