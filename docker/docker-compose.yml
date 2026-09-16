@@ -11,5 +11,21 @@ services:
       - rag-indexes:/app/.indexes
       - ../data:/app/data
 
+  # Watches every company subdirectory under ../data and auto re-ingests (sync
+  # mode, so deletions are reflected too) whenever a doc is added/edited/removed.
+  # Shares rag-indexes with rag-api so the API serves whatever the watcher just
+  # indexed. Optional — omit this service (`docker compose up rag-api`) if you'd
+  # rather trigger ingestion manually via the CLI or POST /ingest.
+  rag-watcher:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: ["python", "-m", "rag.cli", "watch-all"]
+    env_file:
+      - ../.env
+    volumes:
+      - rag-indexes:/app/.indexes
+      - ../data:/app/data
+
 volumes:
   rag-indexes:

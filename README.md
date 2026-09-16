@@ -35,6 +35,27 @@ python -m rag.cli stats --company acme
 python -m rag.cli check-models
 ```
 
+## Keeping the index in sync automatically
+
+`ingest` defaults to `--sync`: it treats the directory as the company's *complete* current doc
+set, so a file that's been deleted (or edited into fewer chunks) has its old chunks removed from
+the index, not just its new content added. Pass `--no-sync` for incremental/partial uploads
+(this is what `POST /ingest` uses, since it only ever receives whatever files were attached to
+that one request).
+
+To auto re-ingest whenever files change, run a watcher instead of calling `ingest` by hand:
+
+```bash
+python -m rag.cli watch data/sample_company --company acme          # one company
+python -m rag.cli watch-all --data-dir data                          # every data/<company_id>/ subdir
+```
+
+Either runs forever, does an initial sync on startup, then re-ingests (always in sync mode) after
+`--debounce` seconds (default 3) of quiet following the last change under the watched directory —
+so a bulk copy or an editor's save-then-rename collapses into one re-ingest, not several. `docker
+compose` ships this as an optional `rag-watcher` service alongside `rag-api`, sharing the same
+`data/` and index volumes.
+
 ## Run the API
 
 ```bash
@@ -77,8 +98,9 @@ pytest
 ```
 
 The full suite runs with no API keys set — it exercises chunking, RRF fusion, the local
-vector store, BM25, and API auth (401/403/200 paths) directly, plus an end-to-end retrieval
-pass with a fake embedder.
+vector store, BM25 (including sync-deletion and the empty-corpus edge case), API auth
+(401/403/429/200 paths), and the watcher's debounce logic directly, plus an end-to-end
+retrieval pass with a fake embedder.
 
 ## Docker
 
@@ -112,3 +134,8 @@ confirms your API key can actually reach the configured model IDs before you rel
   known caller, it carries the specific `company_id`s you're allowed to touch. Without this,
   `company_id` would be a client-supplied field with no enforcement — any caller could read or
   pollute another tenant's document index just by naming it in the request.
+- **Re-ingestion is a sync, not just an append**: `watch`/`watch-all` (and `ingest --sync`, the
+  default) diff against a persisted per-company manifest, so a doc that's deleted or shrinks
+  during an edit actually loses its stale chunks from the vector store *and* the BM25 index —
+  not just gains new ones. A watcher that only ever adds would let deleted docs answer queries
+  forever.

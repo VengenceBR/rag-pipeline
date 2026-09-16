@@ -49,3 +49,22 @@ def test_get_chunks_batch(tmp_path):
 def test_query_empty_company_returns_empty(tmp_path):
     store = LocalVectorStore(base_dir=tmp_path)
     assert store.query("nonexistent", [1.0, 0.0], top_k=5) == []
+
+
+def test_delete_removes_chunk_and_leaves_others_queryable(tmp_path):
+    store = LocalVectorStore(base_dir=tmp_path)
+    chunks = [_chunk("a", "returns"), _chunk("b", "shipping"), _chunk("c", "billing")]
+    store.upsert("acme", chunks, [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
+
+    store.delete("acme", ["b"])
+
+    assert store.get_chunk("acme", "b") is None
+    matches = store.query("acme", [0.0, 1.0, 0.0], top_k=5)
+    assert {m.chunk_id for m in matches} == {"a", "c"}
+
+
+def test_delete_empty_list_is_a_noop(tmp_path):
+    store = LocalVectorStore(base_dir=tmp_path)
+    store.upsert("acme", [_chunk("a", "returns")], [[1.0, 0.0]])
+    store.delete("acme", [])
+    assert store.get_chunk("acme", "a") is not None

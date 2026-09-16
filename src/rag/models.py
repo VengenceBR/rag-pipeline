@@ -73,3 +73,6 @@ class IngestResult(BaseModel):
     chunks_created: int
     chunks_embedded: int
     chunks_cached: int
+    chunks_deleted: int = 0
+    """Chunks removed because their source file was gone or changed. Only nonzero
+    when sync=True (the directory is treated as authoritative for this company)."""

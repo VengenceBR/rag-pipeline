@@ -83,3 +83,11 @@ class PineconeVectorStore:
                     content_hash="",
                 )
         return result
+
+    def delete(self, company_id: str, chunk_ids: list[str]) -> None:
+        if not chunk_ids:
+            return
+        batch_size = 1000
+        for start in range(0, len(chunk_ids), batch_size):
+            batch = chunk_ids[start : start + batch_size]
+            self._index.delete(ids=batch, namespace=company_id)

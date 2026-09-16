@@ -93,3 +93,13 @@ class LocalVectorStore:
         wanted = set(chunk_ids)
         _, chunks, ids = self._load(company_id)
         return {cid: chunk for chunk, cid in zip(chunks, ids) if cid in wanted}
+
+    def delete(self, company_id: str, chunk_ids: list[str]) -> None:
+        if not chunk_ids:
+            return
+        to_remove = set(chunk_ids)
+        vectors, chunks, ids = self._load(company_id)
+        keep_idx = [i for i, cid in enumerate(ids) if cid not in to_remove]
+        kept_vectors = vectors[keep_idx] if len(keep_idx) else np.zeros((0, 0), dtype=np.float32)
+        kept_chunks = [chunks[i] for i in keep_idx]
+        self._save(company_id, kept_vectors, kept_chunks)

@@ -26,12 +26,19 @@ def _friendly_errors():
 def ingest(
     directory: Path = typer.Argument(..., help="Directory of company documents to ingest"),
     company: str = typer.Option(..., "--company", "-c", help="Company/tenant id"),
+    sync: bool = typer.Option(
+        True,
+        "--sync/--no-sync",
+        help="Treat DIRECTORY as this company's complete doc set: chunks for files no "
+        "longer there (deleted, or edited into fewer chunks) are removed from the index. "
+        "Use --no-sync to only add/update, e.g. when DIRECTORY is just a partial batch.",
+    ),
 ):
     """Load, chunk, embed, and index a directory of documents for one company."""
     from rag.service import RAGService
 
     with _friendly_errors():
-        result = RAGService().ingest(directory, company)
+        result = RAGService().ingest(directory, company, sync=sync)
         typer.echo(result.model_dump_json(indent=2))
 
 
@@ -85,6 +92,48 @@ def search(
                 f"dense={rc.dense_score} sparse={rc.sparse_score}  {location}"
             )
             typer.echo(f"    {rc.chunk.text[:200]}...")
+
+
+@app.command()
+def watch(
+    directory: Path = typer.Argument(..., help="Directory to watch for one company"),
+    company: str = typer.Option(..., "--company", "-c", help="Company/tenant id"),
+    debounce: float = typer.Option(
+        3.0, "--debounce", help="Seconds of quiet after a change before re-ingesting"
+    ),
+):
+    """Watch a directory and auto re-ingest (sync mode) on every change. Runs forever."""
+    from rag.watch import watch_companies
+
+    with _friendly_errors():
+        typer.echo(f"Watching {directory} for company '{company}' (Ctrl+C to stop)...")
+        watch_companies({company: directory}, debounce_seconds=debounce)
+
+
+@app.command("watch-all")
+def watch_all(
+    data_dir: Path = typer.Option(
+        settings.data_dir,
+        "--data-dir",
+        help="Each immediate subdirectory is watched as its own company (folder name = company_id)",
+    ),
+    debounce: float = typer.Option(
+        3.0, "--debounce", help="Seconds of quiet after a change before re-ingesting"
+    ),
+):
+    """Watch every company subdirectory under DATA_DIR and auto re-ingest on change. Runs forever."""
+    from rag.watch import discover_company_dirs, watch_companies
+
+    with _friendly_errors():
+        company_dirs = discover_company_dirs(data_dir)
+        if not company_dirs:
+            typer.echo(f"No company subdirectories found under {data_dir}.", err=True)
+            raise typer.Exit(code=1)
+        typer.echo(
+            f"Watching {len(company_dirs)} companies under {data_dir}: "
+            f"{list(company_dirs)} (Ctrl+C to stop)..."
+        )
+        watch_companies(company_dirs, debounce_seconds=debounce)
 
 
 @app.command()

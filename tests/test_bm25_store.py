@@ -41,3 +41,24 @@ def test_rebuild_replaces_previous_index(tmp_path):
     matches = store.query("acme", "information", top_k=5)
     ids = {m.chunk_id for m in matches}
     assert ids == {"b"}
+
+
+def test_build_with_empty_corpus_does_not_raise(tmp_path):
+    """Regression: bm25s.index() raises ValueError on an empty corpus. Hit by the
+    watcher's initial sync against an empty company directory.
+    """
+    store = BM25Store(base_dir=tmp_path)
+    store.build("acme", [])
+    assert store.query("acme", "anything", top_k=5) == []
+
+
+def test_build_empty_after_nonempty_clears_stale_index(tmp_path):
+    """Regression: deleting a company's last doc (sync ingest -> 0 chunks) must not
+    leave the previous index around to serve stale query results.
+    """
+    store = BM25Store(base_dir=tmp_path)
+    store.build("acme", [_chunk("a", "shipping information")])
+    assert store.query("acme", "information", top_k=5) != []
+
+    store.build("acme", [])
+    assert store.query("acme", "information", top_k=5) == []

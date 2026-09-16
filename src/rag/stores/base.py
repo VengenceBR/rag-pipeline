@@ -29,3 +29,6 @@ class VectorStore(Protocol):
 
     def get_chunks(self, company_id: str, chunk_ids: list[str]) -> dict[str, Chunk]:
         ...
+
+    def delete(self, company_id: str, chunk_ids: list[str]) -> None:
+        ...

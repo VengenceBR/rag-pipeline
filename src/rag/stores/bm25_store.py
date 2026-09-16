@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
 import bm25s
@@ -35,14 +36,25 @@ class BM25Store:
         BM25 indexes aren't incrementally updatable in bm25s, so ingestion always
         passes the *complete* current chunk list for the company.
         """
+        company_dir = self._company_dir(company_id)
+        ids_path = self._ids_path(company_id)
+
+        if not chunks:
+            # bm25s.index() raises on an empty corpus. Nothing to build -- and if a
+            # previous (nonempty) index exists here, e.g. after a sync ingest deleted
+            # this company's last remaining doc, it's now stale and must go too.
+            shutil.rmtree(company_dir / "index", ignore_errors=True)
+            ids_path.unlink(missing_ok=True)
+            return
+
         corpus = [c.text for c in chunks]
         chunk_ids = [c.chunk_id for c in chunks]
         corpus_tokens = bm25s.tokenize(corpus, stopwords="en", show_progress=False)
 
         retriever = bm25s.BM25()
         retriever.index(corpus_tokens, show_progress=False)
-        retriever.save(str(self._company_dir(company_id) / "index"))
-        self._ids_path(company_id).write_text(json.dumps(chunk_ids), encoding="utf-8")
+        retriever.save(str(company_dir / "index"))
+        ids_path.write_text(json.dumps(chunk_ids), encoding="utf-8")
 
     def _load(self, company_id: str) -> tuple[bm25s.BM25, list[str]] | None:
         index_path = self._company_dir(company_id) / "index"

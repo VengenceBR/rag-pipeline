@@ -62,11 +62,11 @@ class RAGService:
             )
         return self._retriever
 
-    def ingest(self, directory: Path, company_id: str) -> IngestResult:
+    def ingest(self, directory: Path, company_id: str, sync: bool = False) -> IngestResult:
         pipeline = IngestionPipeline(
             vector_store=self.vector_store, bm25_store=self.bm25_store, embedder=self.embedder
         )
-        return pipeline.ingest_directory(directory, company_id)
+        return pipeline.ingest_directory(directory, company_id, sync=sync)
 
     def query(self, query: str, company_id: str, mode: str = "answer") -> QueryResponse:
         retrieved = self.retriever.retrieve(query, company_id)

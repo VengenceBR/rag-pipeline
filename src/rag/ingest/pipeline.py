@@ -51,9 +51,18 @@ class IngestionPipeline:
         self.bm25_store = bm25_store or BM25Store()
         self.embedder = embedder or GeminiEmbedder()
 
-    def ingest_directory(self, directory: Path, company_id: str) -> IngestResult:
+    def ingest_directory(self, directory: Path, company_id: str, sync: bool = False) -> IngestResult:
+        """sync=True treats `directory` as the complete, authoritative set of this
+        company's docs: any previously-indexed chunk whose source doc is no longer
+        present (deleted, or re-chunked differently after an edit) gets removed.
+        sync=False (the API's default, for incremental file-at-a-time uploads) only
+        ever adds/updates — nothing is ever deleted, even if `directory` is a subset
+        of the company's full corpus.
+        """
         docs = load_directory(directory, company_id)
         new_chunks = chunk_documents(docs)
+        new_chunk_ids = {c.chunk_id for c in new_chunks}
+        touched_doc_ids = {c.doc_id for c in new_chunks}
 
         cache = EmbeddingCache(settings.index_dir / "embedding_cache" / f"{company_id}.json")
         texts = [c.text for c in new_chunks]
@@ -65,6 +74,18 @@ class IngestionPipeline:
             self.vector_store.upsert(company_id, new_chunks, embeddings)
 
         manifest = _load_manifest(company_id)
+
+        stale_ids = [
+            cid
+            for cid, chunk in manifest.items()
+            if cid not in new_chunk_ids
+            and (chunk.doc_id in touched_doc_ids or (sync and chunk.doc_id not in touched_doc_ids))
+        ]
+        if stale_ids:
+            self.vector_store.delete(company_id, stale_ids)
+            for cid in stale_ids:
+                del manifest[cid]
+
         for chunk in new_chunks:
             manifest[chunk.chunk_id] = chunk
         _save_manifest(company_id, manifest)
@@ -78,4 +99,5 @@ class IngestionPipeline:
             chunks_created=len(new_chunks),
             chunks_embedded=num_embedded,
             chunks_cached=num_cached,
+            chunks_deleted=len(stale_ids),
         )
