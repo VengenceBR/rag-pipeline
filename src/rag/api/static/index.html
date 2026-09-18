@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="/assets/corvit-mark.png">
+<link rel="apple-touch-icon" href="/assets/corvit-favicon.png">
 <title>Corvit Assistant</title>
 <style>
   :root {
@@ -10,12 +12,12 @@
     --bg: #f6f7f5;
     --panel: #ffffff;
     --border: #e4e3df;
-    --text: #201f1c;
+    --text: #1a1a1a;
     --muted: #6c6b66;
-    --accent: #2f6f4f;
-    --accent-dark: #24573e;
+    --accent: #c0272f;
+    --accent-dark: #93151b;
     --accent-fg: #ffffff;
-    --user-bubble: #e9f0ea;
+    --user-bubble: #f6e6e7;
     --assistant-bubble: #ffffff;
     --error-bg: #fdecea;
     --error-border: #f3c8c4;
@@ -44,20 +46,48 @@
     min-height: calc(100vh - 40px);
   }
   header { text-align: center; padding: 8px 0 2px; }
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    background: var(--accent);
-    color: var(--accent-fg);
-    font-weight: 700;
-    font-size: 18px;
-    margin-bottom: 10px;
+  .logo-mark {
+    position: relative;
+    width: 150px;
+    margin: 0 auto 14px;
   }
-  h1 { font-size: 20px; margin: 0 0 4px; }
+  .logo-mark::before {
+    content: '';
+    position: absolute;
+    inset: -18px -14px auto -14px;
+    height: 84px;
+    background: radial-gradient(ellipse at center, rgba(192, 39, 47, .30), transparent 72%);
+    filter: blur(6px);
+    animation: logo-glow 3.6s ease-in-out infinite;
+    z-index: 0;
+  }
+  .logo-mark img {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: auto;
+    display: block;
+    animation: logo-float 3.6s ease-in-out infinite;
+  }
+  @keyframes logo-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+  @keyframes logo-glow {
+    0%, 100% { opacity: .55; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.08); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .logo-mark::before, .logo-mark img { animation: none; }
+  }
+  h1 {
+    font-size: 13px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
   .tagline { color: var(--muted); font-size: 13.5px; margin: 0; }
   .disclaimer {
     margin-top: 10px;
@@ -177,10 +207,10 @@
       --border: #303136;
       --text: #ececec;
       --muted: #9b9b9b;
-      --accent: #4caf7d;
-      --accent-dark: #3c9066;
-      --accent-fg: #0c130f;
-      --user-bubble: #24382c;
+      --accent: #e2555c;
+      --accent-dark: #c73a41;
+      --accent-fg: #180608;
+      --user-bubble: #3a2325;
       --assistant-bubble: #1e1f22;
       --error-bg: #2e1d1c;
       --error-border: #5a332f;
@@ -194,8 +224,8 @@
 <body>
 <div class="app">
   <header>
-    <div class="badge">CV</div>
-    <h1>Corvit Assistant</h1>
+    <div class="logo-mark"><img src="/assets/corvit-mark.png" alt="Corvit Networks"></div>
+    <h1>Assistant</h1>
     <p class="tagline">Ask about Corvit Networks' policies, values, and client support.</p>
     <span class="disclaimer">Independent demo &middot; not an official Corvit channel &middot; built from public info</span>
   </header>

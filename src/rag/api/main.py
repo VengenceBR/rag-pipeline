@@ -7,6 +7,7 @@ from pathlib import Path
 from fastapi import Depends, FastAPI, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.security import APIKeyHeader
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from rag.auth import ApiKeyRecord, load_api_keys
@@ -18,6 +19,12 @@ from rag.service import RAGService
 app = FastAPI(
     title="RAG Pipeline",
     description="Hybrid (dense + BM25 + cross-encoder rerank) retrieval over company documents.",
+)
+
+app.mount(
+    "/assets",
+    StaticFiles(directory=Path(__file__).parent / "static" / "assets"),
+    name="assets",
 )
 
 _service: RAGService | None = None
@@ -82,12 +89,19 @@ def _client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 
+_NO_CACHE = {"Cache-Control": "no-cache"}
+"""Forces revalidation on every load instead of silently serving a stale cached
+copy of a page that changes during active development (and could change again
+post-deploy) -- browsers otherwise cache HTML/JS more aggressively than is
+convenient here, especially inside an iframe."""
+
+
 @app.get("/", include_in_schema=False)
 def index():
     """The public-facing chat site. No API key needed -- it only ever talks to
     settings.public_chat_company_id, through the IP-rate-limited /chat endpoint.
     """
-    return FileResponse(Path(__file__).parent / "static" / "index.html")
+    return FileResponse(Path(__file__).parent / "static" / "index.html", headers=_NO_CACHE)
 
 
 @app.get("/widget-loader.js", include_in_schema=False)
@@ -99,7 +113,8 @@ def widget_loader():
     """
     return FileResponse(
         Path(__file__).parent / "static" / "widget-loader.js",
-        media_type="application/javascript",
+        media_type="application/javascript; charset=utf-8",
+        headers=_NO_CACHE,
     )
 
 
@@ -145,7 +160,7 @@ def demo():
     API key in the browser. A real integration puts the key in the company's own
     backend and proxies from there. The public / + /chat above is the safe pattern.
     """
-    return FileResponse(Path(__file__).parent / "static" / "demo.html")
+    return FileResponse(Path(__file__).parent / "static" / "demo.html", headers=_NO_CACHE)
 
 
 @app.get("/health")

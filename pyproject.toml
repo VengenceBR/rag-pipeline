@@ -34,7 +34,7 @@ dev = [
 where = ["src"]
 
 [tool.setuptools.package-data]
-"rag.api" = ["static/*.html", "static/*.js"]
+"rag.api" = ["static/*.html", "static/*.js", "static/assets/*.png"]
 
 [build-system]
 requires = ["setuptools>=68.0"]

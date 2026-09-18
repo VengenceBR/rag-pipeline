@@ -12,7 +12,6 @@
 
   var bubble = document.createElement('button');
   bubble.setAttribute('aria-label', 'Open chat assistant');
-  bubble.textContent = '💬'; // speech balloon -- zero-dependency icon
   Object.assign(bubble.style, {
     position: 'fixed',
     bottom: '20px',
@@ -21,18 +20,35 @@
     height: BUBBLE_SIZE + 'px',
     borderRadius: '50%',
     border: 'none',
-    background: '#2f6f4f',
-    color: '#fff',
+    background: '#ffffff',
+    color: '#c0272f',
     fontSize: '26px',
     lineHeight: BUBBLE_SIZE + 'px',
     padding: '0',
     cursor: 'pointer',
     boxShadow: '0 4px 14px rgba(0,0,0,.25)',
     zIndex: 2147483000,
+    overflow: 'hidden',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   });
 
+  var bubbleIcon = document.createElement('img');
+  bubbleIcon.src = ORIGIN + '/assets/corvit-mark.png';
+  bubbleIcon.alt = '';
+  Object.assign(bubbleIcon.style, {
+    width: '62%',
+    height: 'auto',
+    display: 'block',
+  });
+  bubble.appendChild(bubbleIcon);
+
   var frame = document.createElement('iframe');
-  frame.src = ORIGIN + '/';
+  // Cache-bust with a unique query string every time this script runs, so a
+  // stale cached copy of "/" literally cannot be served -- the URL itself is
+  // new, independent of whether the browser honors Cache-Control correctly.
+  frame.src = ORIGIN + '/?v=' + Date.now();
   frame.title = 'Chat assistant';
   Object.assign(frame.style, {
     position: 'fixed',
@@ -54,8 +70,8 @@
   function setOpen(next) {
     isOpen = next;
     frame.style.display = isOpen ? 'block' : 'none';
-    bubble.textContent = isOpen ? '✕' : '💬';
-    bubble.style.fontSize = isOpen ? '28px' : '26px';
+    bubble.textContent = isOpen ? '✕' : ''; // escaped so it can't mojibake regardless of headers
+    if (!isOpen) bubble.appendChild(bubbleIcon); // textContent='' above detached it
     bubble.setAttribute('aria-label', isOpen ? 'Close chat assistant' : 'Open chat assistant');
   }
 
