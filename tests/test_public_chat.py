@@ -101,3 +101,10 @@ def test_index_page_loads(client):
     r = client.get("/")
     assert r.status_code == 200
     assert "text/html" in r.headers["content-type"]
+
+
+def test_widget_loader_script_loads(client):
+    r = client.get("/widget-loader.js")
+    assert r.status_code == 200
+    assert "javascript" in r.headers["content-type"]
+    assert "iframe" in r.text  # sanity check it's actually the widget script

@@ -90,6 +90,19 @@ def index():
     return FileResponse(Path(__file__).parent / "static" / "index.html")
 
 
+@app.get("/widget-loader.js", include_in_schema=False)
+def widget_loader():
+    """Embed snippet for a THIRD-PARTY site: <script src=".../widget-loader.js"
+    async></script>. Renders a floating bubble that opens an iframe pointing back
+    at our own "/" -- so the widget never needs CORS (the iframe's requests are
+    same-origin to us) and never touches the host page's CSS/JS.
+    """
+    return FileResponse(
+        Path(__file__).parent / "static" / "widget-loader.js",
+        media_type="application/javascript",
+    )
+
+
 @app.post("/chat", response_model=PublicChatResponse)
 def public_chat(request: PublicChatRequest, http_request: Request):
     message = request.message.strip()

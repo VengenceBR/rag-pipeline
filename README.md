@@ -111,6 +111,22 @@ curl -X POST http://localhost:8000/query \
   `X-API-Key` and lets you hit any company/mode by hand. Fine for local testing, **never** meant
   to be the thing you point real users at, since the key sits in the page.
 
+## Embedding the widget on an existing site
+
+To drop the chat bubble onto a site this project doesn't otherwise control (e.g. Corvit's
+actual marketing site), the site owner adds exactly one line, anywhere in the page:
+
+```html
+<script src="https://<your-deployed-domain>/widget-loader.js" async></script>
+```
+
+That's the whole integration. The loader script derives the backend's origin from its own
+`<script src>`, injects a floating bubble button, and opens a same-origin iframe pointing back
+at `/` when clicked — so it never touches the host page's CSS/JS, and never needs CORS (the
+iframe's own requests to `/chat` are same-origin to *us*, not to the host page). Swap
+`src/rag/api/static/widget-loader.js`'s bubble color/size, or `index.html`'s branding, to match
+whatever site it's going on.
+
 ## Deploying (free): Hugging Face Spaces
 
 The root `Dockerfile` (not `docker/Dockerfile`, which is for local `docker compose`) targets
