@@ -127,6 +127,24 @@ iframe's own requests to `/chat` are same-origin to *us*, not to the host page).
 `src/rag/api/static/widget-loader.js`'s bubble color/size, or `index.html`'s branding, to match
 whatever site it's going on.
 
+### WordPress: `wordpress-plugin/corvit-ai-assistant/`
+
+For a WordPress-based site (corvit.com runs WordPress), raw script injection usually isn't the
+preferred integration path — site owners generally want add-ons managed through the plugin
+system rather than a theme-file edit. `wordpress-plugin/corvit-ai-assistant/` is a small plugin
+that does exactly the same thing as the snippet above, the WordPress-native way:
+
+- `Settings → Corvit AI Assistant` in wp-admin — set the backend URL once, toggle the widget
+  on/off. The widget script is not enqueued at all until a URL is configured.
+- Enqueues `widget-loader.js` via `wp_enqueue_script()` on `wp_enqueue_scripts` (frontend only,
+  never in `wp-admin`), loaded `async` so it can't block page render.
+- No theme files touched, no data stored in WordPress — the plugin's only job is getting that
+  one script tag onto the page.
+
+Install via `Plugins → Add New → Upload Plugin` with `wordpress-plugin/corvit-ai-assistant.zip`
+(rebuild it after editing the plugin source: zip the `corvit-ai-assistant/` folder so the zip's
+top-level entry is the folder itself, matching what WordPress's uploader expects).
+
 ## Deploying (free): Hugging Face Spaces
 
 The root `Dockerfile` (not `docker/Dockerfile`, which is for local `docker compose`) targets

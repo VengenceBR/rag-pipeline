@@ -12,3 +12,4 @@ api_keys.json
 .ruff_cache/
 *.log
 .DS_Store
+wordpress-plugin/*.zip
