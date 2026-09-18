@@ -9,21 +9,20 @@
 <style>
   :root {
     color-scheme: light;
-    --bg: #f6f7f5;
+    --bg: #ffffff;
     --panel: #ffffff;
-    --border: #e4e3df;
+    --border: #f2d3d5;
     --text: #1a1a1a;
-    --muted: #6c6b66;
+    --muted: #8a8685;
     --accent: #c0272f;
     --accent-dark: #93151b;
     --accent-fg: #ffffff;
-    --user-bubble: #f6e6e7;
     --assistant-bubble: #ffffff;
     --error-bg: #fdecea;
     --error-border: #f3c8c4;
     --error-fg: #9a3b34;
-    --chip-bg: #f0efe9;
-    --chip-border: #e0dfd8;
+    --chip-bg: #fdf1f1;
+    --chip-border: #f3cdd0;
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; }
@@ -45,48 +44,40 @@
     gap: 14px;
     min-height: calc(100vh - 40px);
   }
-  header { text-align: center; padding: 8px 0 2px; }
-  .logo-mark {
+  header { text-align: center; padding: 0; }
+  .logo-band {
     position: relative;
-    width: 150px;
-    margin: 0 auto 14px;
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 20px 24px;
+    margin-bottom: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(192, 39, 47, .06);
   }
-  .logo-mark::before {
+  .logo-band::before {
     content: '';
     position: absolute;
-    inset: -18px -14px auto -14px;
-    height: 84px;
-    background: radial-gradient(ellipse at center, rgba(192, 39, 47, .30), transparent 72%);
-    filter: blur(6px);
+    inset: -30% -10% auto -10%;
+    height: 140%;
+    background: radial-gradient(ellipse at center, rgba(192, 39, 47, .18), transparent 70%);
+    filter: blur(4px);
     animation: logo-glow 3.6s ease-in-out infinite;
-    z-index: 0;
   }
-  .logo-mark img {
+  .logo-band img {
     position: relative;
-    z-index: 1;
-    width: 100%;
-    height: auto;
+    height: 44px;
+    width: auto;
     display: block;
-    animation: logo-float 3.6s ease-in-out infinite;
-  }
-  @keyframes logo-float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-5px); }
+    margin: 0 auto;
   }
   @keyframes logo-glow {
-    0%, 100% { opacity: .55; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.08); }
+    0%, 100% { opacity: .5; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.06); }
   }
   @media (prefers-reduced-motion: reduce) {
-    .logo-mark::before, .logo-mark img { animation: none; }
-  }
-  h1 {
-    font-size: 13px;
-    letter-spacing: .06em;
-    text-transform: uppercase;
-    color: var(--muted);
-    font-weight: 600;
-    margin: 0 0 4px;
+    .logo-band::before { animation: none; }
   }
   .tagline { color: var(--muted); font-size: 13.5px; margin: 0; }
   .disclaimer {
@@ -141,7 +132,7 @@
   .typing { display: flex; gap: 4px; padding: 4px 2px; }
   .typing span {
     width: 6px; height: 6px; border-radius: 50%;
-    background: var(--muted);
+    background: var(--accent);
     animation: bounce 1.2s infinite ease-in-out;
   }
   .typing span:nth-child(2) { animation-delay: 0.15s; }
@@ -200,32 +191,12 @@
     color: var(--muted);
     padding-bottom: 4px;
   }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #16171a;
-      --panel: #1e1f22;
-      --border: #303136;
-      --text: #ececec;
-      --muted: #9b9b9b;
-      --accent: #e2555c;
-      --accent-dark: #c73a41;
-      --accent-fg: #180608;
-      --user-bubble: #3a2325;
-      --assistant-bubble: #1e1f22;
-      --error-bg: #2e1d1c;
-      --error-border: #5a332f;
-      --error-fg: #ff8a80;
-      --chip-bg: #26272b;
-      --chip-border: #34353a;
-    }
-  }
 </style>
 </head>
 <body>
 <div class="app">
   <header>
-    <div class="logo-mark"><img src="/assets/corvit-mark.png" alt="Corvit Networks"></div>
-    <h1>Assistant</h1>
+    <div class="logo-band"><img src="/assets/corvit-mark.png" alt="Corvit Networks"></div>
     <p class="tagline">Ask about Corvit Networks' policies, values, and client support.</p>
     <span class="disclaimer">Independent demo &middot; not an official Corvit channel &middot; built from public info</span>
   </header>
